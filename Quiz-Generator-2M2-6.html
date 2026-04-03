@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>صانع الاختبارات الذكي - الإصدار الفاخر</title>
+    <style>
+        :root { --primary: #5145BA; --bg: #f8fafc; }
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: var(--bg); padding: 20px; direction: rtl; }
+        .admin-card { max-width: 900px; margin: auto; background: white; padding: 30px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+        .group-box { border: 2px solid #e2e8f0; padding: 20px; border-radius: 12px; margin-bottom: 25px; background: #fff; position: relative; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px; }
+        input, textarea { padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; width: 100%; box-sizing: border-box; font-family: inherit; }
+        textarea { height: 150px; line-height: 1.6; background: #fafafa; }
+        .btn { cursor: pointer; border: none; border-radius: 8px; padding: 12px 25px; font-weight: bold; color: white; transition: 0.3s; margin: 5px; }
+        .btn-add { background: #10b981; }
+        .btn-gen { background: var(--primary); width: 100%; font-size: 1.2em; margin-top: 10px; }
+        .btn-del { background: #ef4444; position: absolute; top: 10px; left: 10px; padding: 5px 10px; font-size: 11px; }
+        #output-area { display: none; margin-top: 30px; border-top: 3px dashed var(--primary); padding-top: 20px; }
+        #final-code { background: #1e293b; color: #f8fafc; padding: 20px; border-radius: 8px; direction: ltr; text-align: left; overflow-x: auto; white-space: pre-wrap; font-size: 12px; max-height: 450px; }
+        .instruction { background: #eff6ff; border-right: 4px solid #3b82f6; padding: 15px; margin-bottom: 20px; font-size: 14px; }
+    </style>
+</head>
+<body>
+
+<div class="admin-card">
+    <h2 style="text-align:center; color: var(--primary);">💎 مولد واجهات الاختبارات الذكية</h2>
+    
+    <div class="instruction">
+        <strong>طريقة الإدخال السهلة:</strong><br>
+        1. لكى تظهر اسئلة كل دكتور فى قسم مخصص فى واجهة الاختبار المتولد اكتب معرف القسم (مثلاً: dr1) فى مربع الادخال المخصص بها وكذلك اسم القسم (مثلاً: د. أحمد أو اسم الماده وبجانبها اسم الدكتور) وإذا تركت هذه الخانات فارغة سيتم اظهار كل الاسئلة فى قسم واحد عام .<br>
+        2. اكتب الأسئلة بصيغة: <code>السؤال |*صح | خطأ  أو السؤال | صح | *خطأ  أو السؤال | خيار 1 | *خيار صح | خيار 3</code><br>
+        3. كرر ذلك لكل مادة أو دكتور ، ثم اضغط توليد. يمكنك جمع كل بنك الاسئلة للفصل الدراسى فى اختبار واحد وسيظهر اسئلة كل دكتور على حده.<br>
+        4. كل مربع ادخال للاسئلة يقبل عدد كبير من الاسئلة بحيث يكون كل سؤال فى سطر وعدم وجود سطور فارغة وعدم وجود فقرات بدون اجابات بعدها.<br>
+        5. انسخ الكود المتولد سواء بزر النسخ اعلى الكود او انسخه يدويا وإلصقه فى محرر النصوص واحفظ الملف بإمتداد html مثل (test.html)واحفظه على الجهاز وابدأ فى تشغيل الاختبار.
+    </div>
+
+    <div id="inputs-container">
+        <div class="group-box">
+            <div class="grid">
+                <input type="text" class="cat-id" placeholder="معرف القسم (مثلاً: dr1)">
+                <input type="text" class="cat-name" placeholder="اسم القسم للعرض (مثلاً: د. محمد)">
+            </div>
+            <textarea class="questions-data" placeholder="السؤال | *الصح | خطأ 1 | خطأ 2"></textarea>
+        </div>
+    </div>
+
+    <div style="text-align: center;">
+        <button class="btn btn-add" onclick="addGroup()">+ إضافة قسم/دكتور آخر</button>
+        <button class="btn btn-gen" onclick="generateNow()">🚀 توليد الكود النهائي</button>
+    </div>
+
+    <div id="output-area">
+        <h3>✅ الكود المتولد (جاهز للنسخ أو تنزيل ملف الاختبار):</h3>
+        <button class="btn" style="background:#64748b;" onclick="copyCode()">نسخ الكود</button>
+        <button class="btn" style="background:#0ea5e9;" onclick="downloadCode()">تنزيل ملف الاختبار (HTML)</button>
+        <div id="final-code"></div>
+    </div>
+</div>
+
+<script>
+    function addGroup() {
+        const div = document.createElement('div');
+        div.className = 'group-box';
+        div.innerHTML = `
+            <button class="btn btn-del" onclick="this.parentElement.remove()">حذف</button>
+            <div class="grid">
+                <input type="text" class="cat-id" placeholder="معرف القسم (مثلاً: dr2)">
+                <input type="text" class="cat-name" placeholder="اسم القسم للعرض">
+            </div>
+            <textarea class="questions-data" placeholder="السؤال | *الصح | خطأ 1 | خطأ 2"></textarea>`;
+        document.getElementById('inputs-container').appendChild(div);
+    }
+
+    function generateNow() {
+        let db = [];
+        let categories = [];
+        const groups = document.querySelectorAll('.group-box');
+        
+        groups.forEach(g => {
+            const cid = g.querySelector('.cat-id').value || "gen";
+            const cname = g.querySelector('.cat-name').value || "عام";
+            const text = g.querySelector('.questions-data').value.trim();
+            
+            if(text) {
+                categories.push({ id: cid, name: cname });
+                text.split('\n').forEach(line => {
+                    if(line.includes('|')) {
+                        const parts = line.split('|').map(s => s.trim());
+                        const q = parts[0];
+                        const optionsRaw = parts.slice(1);
+                        let ans = 0;
+                        const cleanOpts = optionsRaw.map((opt, i) => {
+                            if(opt.startsWith('*')) { ans = i; return opt.substring(1).trim(); }
+                            return opt;
+                        });
+                        db.push({ cat: cid, q: q, opts: cleanOpts, ans: ans });
+                    }
+                });
+            }
+        });
+
+        if(db.length === 0) return alert("أدخل بعض الأسئلة أولاً!");
+
+        // بناء كود الـ Chips ديناميكياً
+        let chipsHtml = `<button class="chip active" data-value="all">المنهج كامل</button>\n`;
+        categories.forEach(c => {
+            chipsHtml += `                <button class="chip" data-value="${c.id}">${c.name}</button>\n`;
+        });
+
+        // جلب قالب المستخدم ودمج البيانات فيه
+        let template = document.documentElement.outerHTML; // هذا للتبسيط، سنضع القالب الفعلي أدناه
+        
+        // بناء الكود النهائي
+        const finalOutput = `<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>اختبار ذكي</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap');
+        :root { --primary-color: #5145BA; --success-color: #28a745; --error-color: #dc3545; --bg-color: #f4f4f9; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Cairo', sans-serif; }
+        body { background: var(--primary-color); display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; }
+        .container { background: white; width: 100%; max-width: 570px; padding: 30px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); display: none; }
+        .container.active { display: block; }
+        h2 { color: var(--primary-color); margin-bottom: 20px; text-align: center; }
+        .setting-group { margin-bottom: 20px; }
+        .group-label { display: block; margin-bottom: 10px; font-weight: bold; font-size: 0.95rem; }
+        .grid-options { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+        .chip-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .chip { padding: 10px; border: 2px solid #ddd; background: white; cursor: pointer; border-radius: 8px; transition: 0.3s; text-align: center; font-weight: 500;}
+        .chip.active { border-color: var(--primary-color); background: #EEF2FF; color: var(--primary-color); font-weight: 900; }
+        input { width: 100%; padding: 12px; border: 2px solid #EDF2F7; border-radius: 12px; font-size: 1rem; margin-top: 5px; outline: none; }
+        .max-hint { display: block; font-size: 0.8rem; color: #718096; margin-top: 5px; }
+        .start-btn { width: 100%; padding: 15px; background: var(--primary-color); color: white; border: none; border-radius: 15px; font-size: 1.1rem; font-weight: 700; cursor: pointer; margin-top: 20px; }
+        .question-block { margin-bottom: 25px; }
+        .question-text { font-size: 1.2rem; margin-bottom: 20px; color: #444; font-weight: bold; line-height: 1.4; }
+        .option-item { padding: 14px; border: 2px solid #EDF2F7; margin-bottom: 10px; border-radius: 12px; cursor: pointer; }
+        .option-item.correct { background: #C6F6D5; border-color: #48BB78; color: #22543D; }
+        .option-item.incorrect { background: #FED7D7; border-color: #F56565; color: #742A2A; }
+        .option-item.selected-temp { border-color: var(--primary-color); background: #EBF4FF; }
+        .locked { pointer-events: none; }
+    </style>
+</head>
+<body>
+    <div id="setup-screen" class="container active">
+        <h2>إعداد الاختبار</h2>
+        <div class="setting-group">
+            <span class="group-label">اختر القسم:</span>
+            <div class="grid-options" id="category-selector">
+                ${chipsHtml}
+            </div>
+        </div>
+        <div class="setting-group">
+            <span class="group-label">نظام الأسئلة:</span>
+            <div class="chip-grid" id="order-selector">
+                <button class="chip active" data-value="fixed">ثابت (كل اسئلة القسم المختار)</button>
+                <button class="chip" data-value="random">ترتيب عشوائى (ادخل عدد الاسئلة)</button>
+            </div>
+        </div>
+        <div id="num-section" class="setting-group" style="display: none;">
+            <span class="group-label">العدد:</span>
+            <input type="number" id="num-input">
+            <span class="max-hint" id="max-label"></span>
+        </div>
+        <div class="setting-group">
+            <span class="group-label">النمط:</span>
+            <div class="chip-grid" id="mode-combined">
+                <button class="chip active" data-value="exam_all">اختبار (كل الاسئلة فى ورقة واحدة)</button>
+                <button class="chip" data-value="study_one">مذاكرة (عرض سؤال بسؤال)</button>
+            </div>
+        </div>
+        <button class="start-btn" onclick="initQuiz()">ابدأ المراجعة</button>
+    </div>
+
+    <div id="quiz-screen" class="container">
+        <div id="quiz-content"></div>
+        <button id="submit-btn" class="start-btn" style="display:none" onclick="handleFullSubmit()">إنهاء</button>
+        <button id="next-btn" class="start-btn" style="display:none" onclick="nextQuestion()">التالي</button>
+        <p id="q-counter" style="text-align:center; margin-top:10px;"></p>
+    </div>
+
+    <div id="result-screen" class="container">
+        <h2 id="res-title">النتيجة</h2>
+        <p id="res-msg" style="text-align:center; font-size:1.5rem;"></p>
+        <div id="mistakes-report"></div>
+        <button class="start-btn" onclick="location.reload()">العودة</button>
+    </div>
+
+    <script>
+        const db = ${JSON.stringify(db)};
+        let state = { category: "all", order: "fixed", mode: "exam", view: "all", questions: [], score: 0, currentIdx: 0, mistakes: [] };
+
+        function updateMaxHint() {
+            const pool = (state.category === 'all') ? db : db.filter(q => q.cat === state.category);
+            document.getElementById('max-label').textContent = "المتاح: " + pool.length;
+            document.getElementById('num-input').max = pool.length;
+            document.getElementById('num-input').value = pool.length;
+        }
+
+        document.querySelectorAll('.chip').forEach(btn => {
+            btn.onclick = function() {
+                this.parentElement.querySelector('.active').classList.remove('active');
+                this.classList.add('active');
+                const val = this.dataset.value;
+                const pid = this.parentElement.id;
+                if(pid === 'category-selector') { state.category = val; updateMaxHint(); }
+                if(pid === 'order-selector') { 
+                    state.order = val; 
+                    document.getElementById('num-section').style.display = (val === 'random') ? 'block' : 'none';
+                    updateMaxHint();
+                }
+                if(pid === 'mode-combined') {
+                    state.mode = val.includes('exam') ? 'exam' : 'study';
+                    state.view = val.includes('all') ? 'all' : 'one';
+                }
+            };
+        });
+        updateMaxHint();
+
+        function initQuiz() {
+            let pool = (state.category === 'all') ? [...db] : db.filter(q => q.cat === state.category);
+            let num = (state.order === 'fixed') ? pool.length : (parseInt(document.getElementById('num-input').value) || pool.length);
+            if(state.order === 'random') pool.sort(() => Math.random() - 0.5);
+            state.questions = pool.slice(0, num);
+            document.getElementById('setup-screen').classList.remove('active');
+            document.getElementById('quiz-screen').classList.add('active');
+            if(state.view === 'all') renderAll(); else showOne();
+        }
+
+        function renderAll() {
+            const cont = document.getElementById('quiz-content');
+            cont.innerHTML = '';
+            state.questions.forEach((q, idx) => {
+                const block = document.createElement('div');
+                block.className = 'question-block';
+                block.innerHTML = '<div class="question-text">'+(idx+1)+'. '+q.q+'</div>';
+                const optsDiv = document.createElement('div');
+                q.opts.forEach((opt, oIdx) => {
+                    const div = document.createElement('div');
+                    div.className = 'option-item'; div.textContent = opt;
+                    div.onclick = () => {
+                        if(optsDiv.classList.contains('locked')) return;
+                        if(state.mode === 'study') {
+                            optsDiv.classList.add('locked');
+                            if(oIdx === q.ans) div.classList.add('correct');
+                            else { div.classList.add('incorrect'); optsDiv.children[q.ans].classList.add('correct'); }
+                        } else {
+                            optsDiv.querySelectorAll('.option-item').forEach(s => s.classList.remove('selected-temp'));
+                            div.classList.add('selected-temp');
+                        }
+                        q.userAns = oIdx;
+                    };
+                    optsDiv.appendChild(div);
+                });
+                block.appendChild(optsDiv);
+                cont.appendChild(block);
+            });
+            document.getElementById('submit-btn').style.display = 'block';
+        }
+
+        function showOne() {
+            const q = state.questions[state.currentIdx];
+            const cont = document.getElementById('quiz-content');
+            cont.innerHTML = '<div class="question-text">'+q.q+'</div><div id="opts"></div>';
+            document.getElementById('q-counter').textContent = 'سؤال ' + (state.currentIdx+1) + ' من ' + state.questions.length;
+            q.opts.forEach((opt, i) => {
+                const div = document.createElement('div');
+                div.className = 'option-item'; div.textContent = opt;
+                div.onclick = () => {
+                    const optsDiv = document.getElementById('opts');
+                    if(optsDiv.classList.contains('locked')) return;
+                    optsDiv.classList.add('locked');
+                    if(i === q.ans) { div.classList.add('correct'); state.score++; }
+                    else { div.classList.add('incorrect'); optsDiv.children[q.ans].classList.add('correct'); state.mistakes.push({q:q.q, a:q.opts[q.ans]}); }
+                    document.getElementById('next-btn').style.display = 'block';
+                };
+                document.getElementById('opts').appendChild(div);
+            });
+        }
+
+        function nextQuestion() {
+            state.currentIdx++;
+            if(state.currentIdx < state.questions.length) { showOne(); document.getElementById('next-btn').style.display='none'; }
+            else showResult();
+        }
+
+        function handleFullSubmit() {
+            if(state.mode === 'exam') {
+                state.score = 0; state.mistakes = [];
+                state.questions.forEach(q => {
+                    if(q.userAns === q.ans) state.score++;
+                    else state.mistakes.push({q:q.q, a:q.opts[q.ans]});
+                });
+            }
+            showResult();
+        }
+
+        function showResult() {
+            document.getElementById('quiz-screen').classList.remove('active');
+            document.getElementById('result-screen').classList.add('active');
+            document.getElementById('res-msg').textContent = state.score + " / " + state.questions.length;
+            const report = document.getElementById('mistakes-report');
+            report.innerHTML = state.mistakes.map(m => '<div style="background:#FFF5F5; padding:10px; margin-bottom:10px; border-radius:8px; border-right:4px solid #F56565"><b>س:</b> '+m.q+'<br><span style="color:green"><b>الصح:</b> '+m.a+'</span></div>').join('');
+        }
+    <\/script>
+</body>
+</html>`;
+
+        document.getElementById('final-code').textContent = finalOutput;
+        document.getElementById('output-area').style.display = 'block';
+    }
+
+    function copyCode() {
+        const text = document.getElementById('final-code').textContent;
+        navigator.clipboard.writeText(text).then(() => alert("✅ تم النسخ!"));
+    }
+function downloadCode() {
+    const code = document.getElementById('final-code').textContent;
+    if (!code) return alert("يرجى توليد الكود أولاً!");
+
+    // إنشاء كائن Blob يحتوي على الكود بصيغة HTML
+    const blob = new Blob([code], { type: 'text/html' });
+    
+    // إنشاء رابط مؤقت للتنزيل
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    
+    // إعدادات الملف (الاسم والامتداد)
+    a.href = url;
+    a.download = 'smart_test.html'; 
+    
+    // تنفيذ عملية الضغط الآلي على الرابط لبدء التحميل
+    document.body.appendChild(a);
+    a.click();
+    
+    // تنظيف الذاكرة وحذف الرابط المؤقت
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+}
+</script>
+</body>
+</html>
